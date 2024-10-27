@@ -156,11 +156,16 @@ impl MpvIpc {
                                 warn!("Unhandled observable ID {}", id);
                             }
                         }
+                        if event == "shutdown" {
+                            info!("Received mpv 'shutdown' event.");
+                            *valid_ref.write().await = false;
+                            break; // stop main loop
+                        }
                     } else {
                         warn!("Unhandled mpv message: {}", str);
                     }
                 } else {
-                    warn!("Failed to read from mpv IPC. Assuming it was shut down.");
+                    warn!("Failed to read from mpv IPC. Assuming 'shutdown'.");
                     *valid_ref.write().await = false;
 
                     // Send faked shutdown event
@@ -169,7 +174,7 @@ impl MpvIpc {
                             handler.send(json!({"event": "shutdown"})).await.unwrap();
                         }
                     }
-                    break;
+                    break; // stop main loop
                 }
             }
         });
@@ -322,6 +327,7 @@ impl Drop for MpvIpc {
                     handle.abort();
                 }
                 self.tasks.clear();
+                _ = self.writer.shutdown().await;
             });
         });
     }

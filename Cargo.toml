@@ -1,6 +1,6 @@
 [package]
 name = "mpv-ipc"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "Communicate with mpv over JSON IPC"
 homepage = "https://github.com/JerwuQu/mpv-ipc-rs"
