@@ -71,6 +71,7 @@ pub struct MpvSpawnOptions {
     pub ipc_path: PathBuf,
     pub config_dir: Option<PathBuf>,
     pub inherit_stdout: bool,
+    pub owned: bool,
 }
 impl Default for MpvSpawnOptions {
     fn default() -> Self {
@@ -79,6 +80,7 @@ impl Default for MpvSpawnOptions {
             ipc_path: mpv_platform::default_ipc_path(),
             config_dir: None,
             inherit_stdout: false,
+            owned: true,
         }
     }
 }
@@ -91,6 +93,7 @@ pub struct MpvIpc {
     event_handlers: Arc<Mutex<HashMap<String, Vec<mpsc::Sender<serde_json::Value>>>>>,
     observers: LockedMpvIdMap<mpsc::Sender<MpvDataOption>>,
     tasks: Vec<JoinHandle<()>>,
+    owned_process: Option<process::Child>,
 }
 impl MpvIpc {
     pub async fn connect(ipc_path: &PathBuf) -> anyhow::Result<Self> {
@@ -187,6 +190,7 @@ impl MpvIpc {
             observers,
             event_handlers,
             tasks: vec![mpv_ipc_task],
+            owned_process: None,
         })
     }
     pub async fn spawn(opt: &MpvSpawnOptions) -> anyhow::Result<Self> {
@@ -216,6 +220,9 @@ impl MpvIpc {
 
         // Connect
         let mut sself = Self::connect(&opt.ipc_path).await?;
+        if opt.owned {
+            sself.owned_process = Some(child);
+        }
 
         // Sanity check
         let ipc_pid = sself.get_prop::<u32>("pid").await?;
@@ -328,6 +335,10 @@ impl Drop for MpvIpc {
                 }
                 self.tasks.clear();
                 _ = self.writer.shutdown().await;
+                if let Some(child) = &mut self.owned_process {
+                    info!("killing owned mpv");
+                    _ = child.kill().await;
+                }
             });
         });
     }
