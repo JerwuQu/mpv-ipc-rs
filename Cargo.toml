@@ -8,9 +8,9 @@ repository = "https://github.com/JerwuQu/mpv-ipc-rs"
 license = "MIT"
 
 [dependencies]
-anyhow = "1.0.95"
-log = "0.4.22"
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.135"
-tokio = { version = "1.43.0", features = ["full"] }
-tokio-util = "0.7.13"
+anyhow = "1.0"
+log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
